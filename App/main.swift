@@ -26,12 +26,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.applyIconPreference()
         }
+        installSignalHandler()
         relay.start()
         // First launch: open the settings so the user knows where the app lives.
         if !UserDefaults.standard.bool(forKey: "didFirstLaunch") {
             UserDefaults.standard.set(true, forKey: "didFirstLaunch")
             showSettings()
         }
+    }
+
+    /// SIGTERM (kill, logout) skips applicationWillTerminate: handle it so the adapter child doesn't linger.
+    var sigterm: DispatchSourceSignal?
+    func installSignalHandler() {
+        signal(SIGTERM, SIG_IGN)
+        let src = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        src.setEventHandler { NSApp.terminate(nil) }
+        src.resume()
+        sigterm = src
     }
 
     func applicationWillTerminate(_ n: Notification) { relay.stop() }

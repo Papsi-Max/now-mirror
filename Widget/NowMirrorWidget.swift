@@ -26,13 +26,14 @@ struct Provider: TimelineProvider {
     }
 }
 
-/// On the desktop macOS may render widgets in a tinted, monochrome "accented" mode, which flattens
-/// images into a gray block. Ask for full-color rendering so the artwork stays readable.
+/// In the tinted (monochrome) desktop style, images are flattened into a single-color block by default.
+/// `.desaturated` keeps the artwork's luminance, so the cover stays readable while the widget stays dark.
+/// (`.fullColor` was tried first: the cover was readable but the tinted widget came out light, with unreadable text.)
 struct ArtworkImage: View {
     let image: NSImage
     var body: some View {
         if #available(macOS 15.0, *) {
-            Image(nsImage: image).resizable().widgetAccentedRenderingMode(.fullColor).scaledToFill()
+            Image(nsImage: image).resizable().widgetAccentedRenderingMode(.desaturated).scaledToFill()
         } else {
             Image(nsImage: image).resizable().scaledToFill()
         }
