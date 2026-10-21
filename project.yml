@@ -1,0 +1,98 @@
+name: NowMirror
+options:
+  bundleIdPrefix: dev.nowmirror
+  deploymentTarget:
+    macOS: "14.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+schemes:
+  NowMirror:
+    build:
+      targets:
+        NowMirror: all
+    test:
+      targets: [NowMirrorTests]
+targets:
+  NowMirror:
+    type: application
+    platform: macOS
+    sources: [App, Shared, Core]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: Now Mirror
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDisplayName: Now Mirror
+        NSHumanReadableCopyright: "© Now Mirror contributors. MIT."
+        LSApplicationCategoryType: public.app-category.music
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+    entitlements:
+      path: App/NowMirror.entitlements
+      properties: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.nowmirror.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ARCHS: "arm64 x86_64"
+        ONLY_ACTIVE_ARCH: NO
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    dependencies:
+      - target: NowMirrorWidget
+        embed: true
+    preBuildScripts:
+      - name: Embed adapter
+        script: |
+          set -e
+          SRC="$SRCROOT/vendor/mediaremote-adapter"
+          DST="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/adapter"
+          [ -d "$SRC/build/MediaRemoteAdapter.framework" ] || { echo "error: run ./build.sh (adapter not built)"; exit 1; }
+          rm -rf "$DST" && mkdir -p "$DST"
+          cp "$SRC/bin/mediaremote-adapter.pl" "$DST/"
+          cp "$SRC/LICENSE" "$DST/LICENSE-mediaremote-adapter"
+          cp -R "$SRC/build/MediaRemoteAdapter.framework" "$DST/"
+          cp "$SRC/build/MediaRemoteAdapterTestClient" "$DST/"
+        outputFiles: []
+        basedOnDependencyAnalysis: false
+  NowMirrorTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests, Core, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.nowmirror.tests
+        GENERATE_INFOPLIST_FILE: YES
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+  NowMirrorWidget:
+    type: app-extension
+    platform: macOS
+    sources: [Widget, Shared]
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleName: Now Mirror Widget
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDisplayName: Now Mirror
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widget/NowMirrorWidget.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /Library/Application Support/NowMirror/
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.nowmirror.app.widget
+        ARCHS: "arm64 x86_64"
+        ONLY_ACTIVE_ARCH: NO
+        ENABLE_HARDENED_RUNTIME: NO
